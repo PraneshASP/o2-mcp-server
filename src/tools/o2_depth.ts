@@ -7,8 +7,7 @@ export const schema = {
   marketId: z.string().describe("Market ID to fetch depth for."),
   precision: z
     .union([z.number(), z.string()])
-    .describe("Depth precision value (optional).")
-    .optional(),
+    .describe("Depth precision value."),
   apiBaseUrl: z
     .string()
     .describe("Override base URL for the o2 API (optional).")

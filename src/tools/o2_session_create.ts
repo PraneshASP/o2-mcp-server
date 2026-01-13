@@ -9,14 +9,6 @@ export const schema = {
   pair: z
     .tuple([z.string(), z.string()])
     .describe("Market pair symbols [BASE, QUOTE]."),
-  ownerPrivateKey: z
-    .string()
-    .describe("Owner private key override (optional).")
-    .optional(),
-  sessionPrivateKey: z
-    .string()
-    .describe("Session private key override (optional).")
-    .optional(),
   contractIds: z
     .array(z.string())
     .describe("Contract IDs to whitelist (optional).")
@@ -46,7 +38,7 @@ export const schema = {
 export const metadata: ToolMetadata = {
   name: "o2_session_create",
   description:
-    "Create a trading session using the owner private key (SDK-based).",
+    "Create a trading session using the owner private key from O2_PRIVATE_KEY environment variable.",
   annotations: {
     title: "Create trading session",
     readOnlyHint: false,
@@ -58,8 +50,6 @@ export const metadata: ToolMetadata = {
 export default async function o2SessionCreate({
   tradeAccountId,
   pair,
-  ownerPrivateKey,
-  sessionPrivateKey,
   contractIds,
   expiryMs,
   ownerNonce,
@@ -70,8 +60,6 @@ export default async function o2SessionCreate({
   const result = await createSessionWithSdk({
     tradeAccountId,
     pair,
-    ownerPrivateKey,
-    sessionPrivateKey,
     contractIds,
     expiryMs: expiryMs ? Number(expiryMs) : undefined,
     ownerNonce,

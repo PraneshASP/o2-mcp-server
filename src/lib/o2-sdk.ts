@@ -236,10 +236,10 @@ export async function placeOrderWithRestApi(
 ): Promise<PlaceOrderWithRestApiResult> {
   const apiBaseUrl = resolveApiBaseUrl(params.apiBaseUrl);
   const providerUrl = resolveProviderUrl(params.providerUrl);
-  const ownerPrivateKey = resolveOwnerPrivateKey(params.sessionPrivateKey);
+  const ownerPrivateKey = resolveOwnerPrivateKey();
   if (!ownerPrivateKey) {
     throw new Error(
-      "Owner private key is required. Provide sessionPrivateKey or set O2_PRIVATE_KEY."
+      "Owner private key is required. Set O2_PRIVATE_KEY environment variable."
     );
   }
 
@@ -355,5 +355,102 @@ export async function placeOrderWithRestApi(
     orderType: params.orderType ?? "Spot",
     scaledPrice: finalPrice,
     scaledQuantity: finalQuantity,
+  };
+}
+
+type CancelOrderWithRestApiParams = ApiConfig & {
+  tradeAccountId: string;
+  orderId: string;
+};
+
+type CancelOrderWithRestApiResult = {
+  response: unknown;
+};
+
+export async function cancelOrderWithRestApi(
+  params: CancelOrderWithRestApiParams
+): Promise<CancelOrderWithRestApiResult> {
+  const apiBaseUrl = resolveApiBaseUrl(params.apiBaseUrl);
+  const providerUrl = resolveProviderUrl(params.providerUrl);
+  const ownerPrivateKey = resolveOwnerPrivateKey();
+  if (!ownerPrivateKey) {
+    throw new Error(
+      "Owner private key is required. Set O2_PRIVATE_KEY environment variable."
+    );
+  }
+
+  const sessionStorePath = resolveSessionStorePath();
+
+  const client = new RestAPI(new ConfigurationRestAPI({
+    basePath: apiBaseUrl,
+    timeout: 30000,
+    retries: 3,
+    backoff: 1000,
+    baseOptions: {},
+    logger: console,
+  }));
+
+  const provider = await getProvider(providerUrl);
+  const ownerWallet = Wallet.fromPrivateKey(ownerPrivateKey, provider);
+
+  const marketsResponse = await client.getMarkets();
+  const markets: MarketResponse[] = (await marketsResponse.data()).markets;
+  const marketContractIds = markets.map(m => m.contract_id);
+
+  const existingSession = await findValidSessionForTradeAccount(
+    params.tradeAccountId,
+    sessionStorePath
+  );
+
+  let signer: FuelSessionSigner;
+
+  if (existingSession) {
+    console.log(`Reusing existing session ${existingSession.sessionId} (expires: ${new Date(existingSession.expiryMs!).toISOString()})`);
+    signer = new FuelSessionSigner(existingSession.sessionPrivateKey);
+  } else {
+    console.log('No valid session found, creating new session');
+    signer = new FuelSessionSigner();
+  }
+
+  await client.initTradeAccountManager({
+    account: ownerWallet,
+    signer: signer,
+    tradeAccountId: params.tradeAccountId,
+    contractIds: marketContractIds,
+  });
+
+  if (!existingSession) {
+    const expiryMs = Date.now() + DEFAULT_SESSION_EXPIRY_MS;
+    await saveSession({
+      sessionPrivateKey: signer.privateKey,
+      sessionAddress: signer.address.toString(),
+      tradeAccountId: params.tradeAccountId,
+      expiryMs: expiryMs,
+      storePath: sessionStorePath,
+    });
+    console.log(`New session created and saved (expires: ${new Date(expiryMs).toISOString()})`);
+  }
+
+  const market = markets.find(m =>
+    m.base.symbol === params.pair[0] && m.quote.symbol === params.pair[1]
+  );
+
+  if (!market) {
+    throw new Error(`Market ${params.pair[0]}/${params.pair[1]} not found`);
+  }
+
+  const response = await client.sessionSubmitTransaction({
+    market,
+    actions: [{
+      CancelOrder: {
+        order_id: params.orderId as `0x${string}`
+      }
+    }]
+  });
+
+  const data = await response.data();
+
+  return {
+    response: data,
   };
 }

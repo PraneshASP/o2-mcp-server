@@ -9,14 +9,9 @@ export const schema = {
   pair: z
     .tuple([z.string(), z.string()])
     .describe("Market pair symbols [BASE, QUOTE]."),
-  sessionPrivateKey: z
-    .string()
-    .describe("Session private key override (optional).")
-    .optional(),
   sessionId: z
     .string()
-    .describe("Session id for stored session key (optional).")
-    .optional(),
+    .describe("Session ID from stored sessions."),
   side: z.enum(["Buy", "Sell"]).describe("Order side."),
   orderType: z
     .enum(["Spot", "Market", "FillOrKill", "PostOnly"])
@@ -66,7 +61,6 @@ export const metadata: ToolMetadata = {
 export default async function o2PlaceOrder({
   tradeAccountId,
   pair,
-  sessionPrivateKey,
   sessionId,
   side,
   orderType,
@@ -78,9 +72,7 @@ export default async function o2PlaceOrder({
   providerUrl,
   sessionStorePath,
 }: InferSchema<typeof schema>) {
-  const resolvedSessionKey = sessionId
-    ? await getSessionPrivateKey(sessionId, sessionStorePath)
-    : sessionPrivateKey;
+  const resolvedSessionKey = await getSessionPrivateKey(sessionId, sessionStorePath);
 
   const useRawValues = rawPrice !== undefined && rawQuantity !== undefined;
   const useScaledValues = price !== undefined && quantity !== undefined;
