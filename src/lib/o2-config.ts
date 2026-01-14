@@ -2,11 +2,13 @@ import "dotenv/config";
 import path from "node:path";
 import os from "node:os";
 
+const DEVNET_BASE_URL = "https://api.devnet.o2.app";
+const TESTNET_BASE_URL = "https://api.testnet.o2.app";
 const MAINNET_BASE_URL = "https://api.o2.app";
-const TESTNET_BASE_URL = "https://api.devnet.o2.app";
 
+const DEVNET_PROVIDER_URL = "https://devnet.fuel.network/v1/graphql";
+const TESTNET_PROVIDER_URL = "https://testnet.fuel.network/v1/graphql";
 const MAINNET_PROVIDER_URL = "https://mainnet.fuel.network/v1/graphql";
-const TESTNET_PROVIDER_URL = "https://devnet.fuel.network/v1/graphql";
 
 function getEnvValue(key: string): string | undefined {
   const env = (globalThis as { process?: { env?: Record<string, string> } })
@@ -30,11 +32,14 @@ export function resolveApiBaseUrl(override?: string): string {
   }
 
   const envNetwork = getEnvValue("O2_NETWORK")?.trim().toLowerCase();
+  if (envNetwork === "mainnet") {
+    return MAINNET_BASE_URL;
+  }
   if (envNetwork === "testnet") {
     return TESTNET_BASE_URL;
   }
 
-  return MAINNET_BASE_URL;
+  return DEVNET_BASE_URL;
 }
 
 export function resolveOwnerId(override?: string): string | undefined {
@@ -76,11 +81,14 @@ export function resolveProviderUrl(override?: string): string {
   }
 
   const envNetwork = getEnvValue("O2_NETWORK")?.trim().toLowerCase();
+  if (envNetwork === "mainnet") {
+    return MAINNET_PROVIDER_URL;
+  }
   if (envNetwork === "testnet") {
     return TESTNET_PROVIDER_URL;
   }
 
-  return MAINNET_PROVIDER_URL;
+  return DEVNET_PROVIDER_URL;
 }
 
 export function resolveSessionStorePath(override?: string): string {
