@@ -4,7 +4,7 @@ const config: XmcpConfig = {
   stdio: true,
   paths: {
     tools: "./src/tools",
-    prompts: false,
+    prompts: "./src/prompts",
     resources: false,
   }
 };
