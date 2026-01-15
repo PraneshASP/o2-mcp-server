@@ -141,6 +141,19 @@ Add to your MCP client config (e.g., `mcp.json`):
 
 ## AI Prompts
 
+**Sample Chat**: https://claude.ai/share/2fde9575-755e-4623-a651-47c4f0627e86
+
+### Create Session
+
+Initialize trading account and create a session to trade ETH/USDC
+
+**Note:** When creating an account with `o2_account_create`, the owner address is automatically derived from your `O2_PRIVATE_KEY` environment variable if not explicitly provided.
+
+### Placing order
+
+Market Buy 2 USDC worth of ETH
+
+
 ### Analyze Market
 
 Comprehensive technical analysis of a market.
